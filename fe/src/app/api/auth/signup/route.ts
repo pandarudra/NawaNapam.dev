@@ -5,10 +5,10 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, password, username, phoneNumber, gender } = body;
+    const { email, password, username } = body;
 
     // Basic validation
-    if (!email || !password || !username || !phoneNumber || !gender) {
+    if (!email || !password || !username) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -18,16 +18,17 @@ export async function POST(req: Request) {
     // Check existing user
     const existingUser = await prisma.user.findFirst({
       where: {
-        OR: [{ email }, { username }, { phoneNumber }],
+        OR: [{ email }, { username }],
       },
     });
 
     if (existingUser) {
-      const field = existingUser.email === email
-        ? "Email"
-        : existingUser.username === username
-        ? "Username"
-        : "Phone number";
+      const field =
+        existingUser.email === email
+          ? "Email"
+          : existingUser.username === username
+          ? "Username"
+          : "User";
 
       return NextResponse.json(
         { error: `${field} already exists` },
@@ -42,17 +43,13 @@ export async function POST(req: Request) {
         email: email.toLowerCase(),
         passwordHash,
         username,
-        name: username,
+        name: "not set",
         isAnonymous: false,
-        phoneNumber,
-        gender,
       },
       select: {
         id: true,
         email: true,
         username: true,
-        phoneNumber: true,
-        gender: true,
         createdAt: true,
       },
     });
