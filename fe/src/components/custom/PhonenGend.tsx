@@ -4,6 +4,15 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { AlertCircle, Phone, User } from "lucide-react";
 
 export default function CompleteProfile() {
   const router = useRouter();
@@ -11,84 +20,135 @@ export default function CompleteProfile() {
   const [countryCode, setCountryCode] = useState("+91");
   const [gender, setGender] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ phone?: string; gender?: string }>({});
+
+  const validateForm = () => {
+    const newErrors: { phone?: string; gender?: string } = {};
+    if (!phoneNumber) newErrors.phone = "Phone number is required";
+    else if (!/^[0-9]{10}$/.test(phoneNumber))
+      newErrors.phone = "Enter a valid 10-digit phone number";
+    if (!gender) newErrors.gender = "Please select your gender";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!phoneNumber || !gender) alert("Please fill the data");
-
-    const phoneRegex = /^[0-9]{10}$/;
-    if (!phoneRegex.test(phoneNumber)) {
-      alert("Enter a valid phone number");
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
-
-    const res = await fetch("/api/updateuser", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        phoneNumber: `${countryCode}${phoneNumber}`,
-        gender,
-      }),
-    });
-
-    if (res.ok) router.push("/dashboard");
-    else alert("Error updating profile");
-    setLoading(false);
+    try {
+      const res = await fetch("/api/updateuser", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phoneNumber: `${countryCode}${phoneNumber}`,
+          gender,
+        }),
+      });
+      if (res.ok) {
+        router.push("/dashboard");
+      } else {
+        setErrors({ phone: "Failed to update profile. Please try again." });
+      }
+    } catch {
+      setErrors({ phone: "An error occurred. Please try again." });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0a140a] to-[#1b2b1b] p-4">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white/10 p-8 rounded-xl shadow-lg border border-amber-500/30 w-full max-w-md"
-      >
-        <h1 className="text-2xl font-bold text-amber-300 mb-6">
-          Complete Your Profile
-        </h1>
-
-        <div className="flex gap-2 mb-4">
-          <select
-            value={countryCode}
-            onChange={(e) => setCountryCode(e.target.value)}
-            className="w-24 h-12 bg-white/10 border-amber-500/30 text-amber-500/90 rounded-md focus:border-amber-400 p-2"
-          >
-            <option value="+91"> +91</option>
-            <option value="+1"> +1</option>
-            <option value="+44"> +44</option>
-          </select>
-          <Input
-            type="tel"
-            placeholder="Phone number"
-            required
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-            className="flex-1 h-12 bg-white/10 border-amber-500/30 text-amber-50 placeholder-amber-200/50 focus:border-amber-400 rounded-md"
-          />
+      <div className="w-full max-w-md bg-white/10 backdrop-blur-sm border border-amber-500/30 rounded-2xl shadow-2xl p-6 sm:p-8 animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
+        <div className="text-center mb-6">
+          <User className="mx-auto h-10 w-10 text-amber-400 mb-3" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-amber-300 mb-2">
+            Complete Your Profile
+          </h1>
+          <p className="text-amber-200/70 text-sm">
+            Add your details to get started
+          </p>
         </div>
 
-        <select
-          required
-          value={gender}
-          onChange={(e) => setGender(e.target.value)}
-          className="w-full h-12 bg-white/10 border-amber-500/30 text-amber-500/90 rounded-md focus:border-amber-400 focus:ring-amber-400/20 mb-6 p-2"
-        >
-          <option value="">Select Gender</option>
-          <option value="MALE">Male</option>
-          <option value="FEMALE">Female</option>
-          <option value="OTHER">Other</option>
-        </select>
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+          <div>
+            <Label
+              htmlFor="phone"
+              className="text-amber-200 flex items-center gap-2 mb-2 text-sm font-medium"
+            >
+              <Phone className="h-4 w-4" />
+              Phone Number
+            </Label>
+            <div className="flex gap-2">
+              <Select value={countryCode} onValueChange={setCountryCode}>
+                <SelectTrigger className="w-20 sm:w-24 h-10 sm:h-11 bg-white/10 border-amber-500/30 text-amber-200 focus:border-amber-400 focus:ring-amber-400/20 rounded-lg flex items-center">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="+91">+91</SelectItem>
+                  <SelectItem value="+1">+1</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="1234567890"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                className="flex-1 h-10 sm:h-11 bg-white/10 border-amber-500/30 text-amber-50 placeholder-amber-200/50 focus:border-amber-400 focus:ring-amber-400/20 rounded-lg"
+              />
+            </div>
+            {errors.phone && (
+              <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {errors.phone}
+              </p>
+            )}
+          </div>
 
-        <Button
-          type="submit"
-          disabled={loading}
-          className="w-full h-13 bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-bold text-lg rounded-md shadow-xl cursor-pointer"
-        >
-          {loading ? "Updating..." : "Continue"}
-        </Button>
-      </form>
+          <div>
+            <Label
+              htmlFor="gender"
+              className="text-amber-200 flex items-center gap-2 mb-2 text-sm font-medium"
+            >
+              <User className="h-4 w-4" />
+              Gender
+            </Label>
+            <Select value={gender} onValueChange={setGender}>
+              <SelectTrigger className="w-full h-10 sm:h-11 bg-white/10 border-amber-500/30 text-amber-200 focus:border-amber-400 focus:ring-amber-400/20 rounded-lg">
+                <SelectValue placeholder="Select your gender" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="MALE">Male</SelectItem>
+                <SelectItem value="FEMALE">Female</SelectItem>
+                <SelectItem value="OTHER">Other</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.gender && (
+              <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {errors.gender}
+              </p>
+            )}
+          </div>
+
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full h-11 sm:h-12 bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-bold text-base rounded-lg shadow-xl hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-amber-400/50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black mr-2"></div>
+                Updating...
+              </>
+            ) : (
+              "Continue to Dashboard"
+            )}
+          </Button>
+        </form>
+      </div>
     </div>
   );
 }

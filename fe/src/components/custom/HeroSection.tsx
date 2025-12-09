@@ -173,7 +173,7 @@ export default function HeroSection() {
                 className="bg-gradient-to-r from-amber-400 to-yellow-500 bg-clip-text text-transparent"
                 style={{ fontFamily: "var(--font-cinzel), serif" }}
               >
-                Nawa Napam?
+                NawaNapam?
               </span>
             </h2>
             <p className="text-amber-100/70 text-lg max-w-3xl mx-auto">

@@ -66,7 +66,7 @@ export default function SignupPage() {
       // toast.success("Account created! Redirecting to login...");
       setTimeout(() => (window.location.href = "/login"), 100);
     } else {
-      // toast.success("Welcome to Nawa Napam!");
+      // toast.success("Welcome to NawaNapam!");
       setTimeout(() => (window.location.href = "/dashboard"), 100);
     }
     setIsLoading(false);
@@ -117,7 +117,7 @@ export default function SignupPage() {
             style={{ fontFamily: "var(--font-cinzel), serif" }}
           >
             <span className="bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-300 bg-clip-text text-transparent">
-              Join Nawa Napam
+              Join NawaNapam
             </span>
           </h1>
           <p className="text-amber-100/70 text-sm mt-3">

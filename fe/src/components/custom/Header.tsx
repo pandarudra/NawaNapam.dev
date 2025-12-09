@@ -42,7 +42,7 @@ export default function Header() {
           <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-amber-500/40 shadow-lg transition-all group-hover:ring-amber-400 group-hover:scale-110">
             <Image
               src="/images/logo.jpg"
-              alt="Nawa Napam"
+              alt="NawaNapam"
               width={40}
               height={40}
               className="object-cover"
@@ -53,7 +53,7 @@ export default function Header() {
             style={{ fontFamily: "var(--font-cinzel), serif" }}
           >
             <span className="bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-300 bg-clip-text text-transparent">
-              Nawa Napam
+              NawaNapam
             </span>
           </span>
         </Link>
@@ -77,7 +77,7 @@ export default function Header() {
                   />
                 </div>
                 <span className="hidden sm:block text-sm font-medium text-amber-100">
-                  {user.name?.split(" ")[0] || "User"}
+                  {user.username || user.name?.split(" ")[0] || "Not set"}
                 </span>
               </button>
 
@@ -87,9 +87,11 @@ export default function Header() {
                   <div className="p-4 border-b border-amber-500/20">
                     <p
                       className="text-sm font-bold text-amber-100"
-                      style={{ fontFamily: "'Cinzel Decorative', serif" }}
+                      style={{ fontFamily: "serif" }}
                     >
-                      {user.name || user.username}
+                      {user.username?.toLowerCase() ||
+                        user.name?.split(" ")[0]?.toLowerCase() ||
+                        "not set"}
                     </p>
                     <p className="text-xs text-amber-300 truncate">
                       {user.email}

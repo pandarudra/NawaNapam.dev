@@ -1,7 +1,7 @@
 // app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google"; // renamed for clarity
-import { Cinzel_Decorative } from "next/font/google";   // ← ADD THIS
+import { Cinzel_Decorative } from "next/font/google"; // ← ADD THIS
 import "./globals.css";
 import Provider from "./Provider";
 
@@ -16,16 +16,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// ADD THIS: Cinzel Decorative (perfect for "Nawa Napam")
+// ADD THIS: Cinzel Decorative (perfect for "NawaNapam")
 const cinzelDecorative = Cinzel_Decorative({
-  weight: ["700", "900"],        
+  weight: ["700", "900"],
   subsets: ["latin"],
-  variable: "--font-cinzel",     // CSS variable to use anywhere
+  variable: "--font-cinzel", // CSS variable to use anywhere
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Nawa Napam – Meet Strangers in One Click",
+  title: "NawaNapam ",
   description: "Instant, anonymous, global video chat rooted in culture.",
 };
 

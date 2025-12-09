@@ -75,15 +75,26 @@ export default function Footer() {
             <div className="text-center md:text-left">
               <div className="flex items-center justify-center md:justify-start gap-4 mb-4">
                 <div className="w-12 h-12 rounded-full overflow-hidden ring-4 ring-amber-500/30 shadow-2xl shadow-amber-500/20">
-                  <Image src="/images/logo.jpg" alt="Nawa Napam" width={48} height={48} className="object-cover" />
+                  <Image
+                    src="/images/logo.jpg"
+                    alt="NawaNapam"
+                    width={48}
+                    height={48}
+                    className="object-cover"
+                  />
                 </div>
-                <h4 className="text-2xl font-black tracking-tight" style={{ fontFamily: "var(--font-cinzel), serif" }}>
+                <h4
+                  className="text-2xl font-black tracking-tight"
+                  style={{ fontFamily: "var(--font-cinzel), serif" }}
+                >
                   <span className="bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-300 bg-clip-text text-transparent">
-                    Nawa Napam
+                    NawaNapam
                   </span>
                 </h4>
               </div>
-              <p className="text-xs text-amber-200/70">Connecting souls with respect and warmth</p>
+              <p className="text-xs text-amber-200/70">
+                Connecting souls with respect and warmth
+              </p>
             </div>
 
             {/* Policy Links */}
@@ -106,7 +117,10 @@ export default function Footer() {
                 className="inline-flex items-center gap-2 text-sm font-medium text-amber-300 hover:text-amber-100 transition-all group"
               >
                 <div className="p-2 rounded-full bg-amber-500/10 border border-amber-500/30 group-hover:bg-amber-500/20 transition-all">
-                  <ArrowUp size={16} className="group-hover:-translate-y-1 transition-transform" />
+                  <ArrowUp
+                    size={16}
+                    className="group-hover:-translate-y-1 transition-transform"
+                  />
                 </div>
                 Back to Top
               </button>
@@ -115,7 +129,14 @@ export default function Footer() {
 
           {/* Bottom */}
           <div className="mt-12 pt-8 border-t border-amber-500/20 text-center text-xs text-amber-200/60">
-            <p>© {currentYear} Nawa Napam. Made with <Heart className="inline fill-amber-400 text-amber-400" size={12} /> in India</p>
+            <p>
+              © {currentYear} NawaNapam. Made with{" "}
+              <Heart
+                className="inline fill-amber-400 text-amber-400"
+                size={12}
+              />{" "}
+              in India
+            </p>
           </div>
         </div>
 
@@ -124,7 +145,10 @@ export default function Footer() {
 
       {/* Modal Overlay */}
       {modalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl" onClick={() => setModalOpen(null)}>
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl"
+          onClick={() => setModalOpen(null)}
+        >
           <div
             className="relative w-full max-w-2xl max-h-[85vh] bg-gradient-to-b from-[#0f1a0f] to-[#0a140a] rounded-3xl shadow-2xl border border-amber-500/30 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
@@ -132,7 +156,10 @@ export default function Footer() {
             {/* Header */}
             <div className="p-8 pb-4 bg-gradient-to-r from-amber-500/20 to-yellow-600/20 border-b border-amber-500/30">
               <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-black text-amber-100" style={{ fontFamily: "var(--font-cinzel), serif" }}>
+                <h2
+                  className="text-2xl font-black text-amber-100"
+                  style={{ fontFamily: "var(--font-cinzel), serif" }}
+                >
                   {modalOpen}
                 </h2>
                 <button
@@ -157,7 +184,9 @@ export default function Footer() {
             </div>
 
             <div className="p-6 bg-black/40 border-t border-amber-500/20 text-center">
-              <p className="text-xs text-amber-300">Last updated: November 2025</p>
+              <p className="text-xs text-amber-300">
+                Last updated: November 2025
+              </p>
             </div>
           </div>
         </div>
