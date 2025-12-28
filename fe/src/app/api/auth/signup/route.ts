@@ -1,3 +1,4 @@
+import { sendWelcomeEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
@@ -27,8 +28,8 @@ export async function POST(req: Request) {
         existingUser.email === email
           ? "Email"
           : existingUser.username === username
-          ? "Username"
-          : "User";
+            ? "Username"
+            : "User";
 
       return NextResponse.json(
         { error: `${field} already exists` },
@@ -53,6 +54,8 @@ export async function POST(req: Request) {
         createdAt: true,
       },
     });
+
+    await sendWelcomeEmail(email);
 
     return NextResponse.json(
       { message: "User created successfully", user: createdUser },

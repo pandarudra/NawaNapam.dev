@@ -7,6 +7,7 @@ import type { NextAuthOptions } from "next-auth";
 import { prisma } from "./prisma";
 import type { User as NextAuthUser } from "next-auth";
 import { googleEnv, nextEnv } from "@/envs/e";
+import { sendWelcomeEmail } from "./email";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -63,7 +64,79 @@ export const authOptions: NextAuthOptions = {
 
   session: { strategy: "jwt" },
 
+  events: {
+    async createUser({ user }) {
+      // Send welcome email when a new user is created (OAuth sign-up)
+      if (user.email) {
+        try {
+          await sendWelcomeEmail(user.email);
+          console.log(`Welcome email sent to: ${user.email}`);
+        } catch (error) {
+          console.error(
+            `Failed to send welcome email to ${user.email}:`,
+            error
+          );
+        }
+      }
+    },
+  },
+
   callbacks: {
+    async signIn({ user, account, profile }) {
+      // Allow credentials sign-in
+      if (account?.provider === "credentials") {
+        return true;
+      }
+
+      // Handle OAuth sign-in (Google, Instagram, etc.)
+      if (account?.provider && user.email) {
+        try {
+          // Check if user exists with this email
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email },
+            include: { accounts: true },
+          });
+
+          if (existingUser) {
+            // Check if this OAuth provider is already linked
+            const accountLinked = existingUser.accounts.some(
+              (acc) => acc.provider === account.provider
+            );
+
+            if (!accountLinked) {
+              // User exists but OAuth account not linked
+              // Automatically link the account
+              await prisma.account.create({
+                data: {
+                  userId: existingUser.id,
+                  type: account.type,
+                  provider: account.provider,
+                  providerAccountId: account.providerAccountId,
+                  refresh_token: account.refresh_token,
+                  access_token: account.access_token,
+                  expires_at: account.expires_at,
+                  token_type: account.token_type,
+                  scope: account.scope,
+                  id_token: account.id_token,
+                  session_state: account.session_state,
+                },
+              });
+              console.log(
+                `[Auth] Linked ${account.provider} account to existing user: ${user.email}`
+              );
+            }
+          }
+
+          return true;
+        } catch (error) {
+          console.error("[Auth] Error in signIn callback:", error);
+          return false;
+        }
+      }
+
+      return true;
+    },
+
     async jwt({ token, user, trigger, session: _session }) {
       // On sign in, add ALL user data to token
       if (user) {
@@ -164,6 +237,7 @@ export const authOptions: NextAuthOptions = {
 
   pages: {
     signIn: "/login",
+    error: "/login", // Redirect errors to login page
   },
   secret: nextEnv.NA_SECRET,
 };

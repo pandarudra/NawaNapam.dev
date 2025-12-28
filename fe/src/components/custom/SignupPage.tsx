@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Alert } from "@/components/ui/alert";
-import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { User, Mail, Lock, Loader2, ArrowLeft, Sparkles } from "lucide-react";
 
 export default function SignupPage() {
@@ -15,22 +15,33 @@ export default function SignupPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
-
   const [isLoading, setIsLoading] = useState(false);
+  const searchParams = useSearchParams();
+
+  // Handle OAuth errors
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (error === "OAuthAccountNotLinked") {
+      toast.error(
+        "Account already exists with this email. Please sign in instead.",
+        { duration: 6000 }
+      );
+    } else if (error) {
+      toast.error("Authentication error. Please try again.");
+    }
+  }, [searchParams]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setIsLoading(true);
 
     if (password !== confirmPassword) {
-      // toast.error("Passwords do not match");
+      toast.error("Passwords do not match");
       setIsLoading(false);
       return;
     }
     if (password.length < 6) {
-      // toast.error("Password too short");
+      toast.error("Password must be at least 6 characters");
       setIsLoading(false);
       return;
     }
@@ -43,8 +54,7 @@ export default function SignupPage() {
 
     const data = await res.json();
     if (!res.ok) {
-      // toast.error(data.error || "Signup failed");
-      setError(data.error || "Signup failed");
+      toast.error(data.error || "Signup failed");
       setIsLoading(false);
       return;
     }
@@ -55,13 +65,12 @@ export default function SignupPage() {
       redirect: false,
     });
     if (result?.error) {
-      // toast.success("Account created! Redirecting to login...");
+      toast.success("Account created! Redirecting to login...");
       setTimeout(() => (window.location.href = "/login"), 100);
     } else {
-      // toast.success("Welcome to NawaNapam!");
+      toast.success("Welcome to NawaNapam!");
       setTimeout(() => (window.location.href = "/dashboard"), 100);
     }
-    setIsLoading(false);
   };
 
   const handleProvider = (provider: "google" | "instagram") =>
@@ -116,12 +125,6 @@ export default function SignupPage() {
             Create your account and connect instantly
           </p>
         </div>
-
-        {error && (
-          <Alert className="mb-6 bg-red-500/10 border-red-500/30 text-amber-100 text-sm">
-            {error}
-          </Alert>
-        )}
 
         <form onSubmit={handleSignup} className="space-y-6">
           <div className="relative">
@@ -232,8 +235,6 @@ export default function SignupPage() {
           </Link>
         </p>
       </Card>
-
-      <Toaster position="top-center" theme="dark" />
     </div>
   );
 }

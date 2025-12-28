@@ -1,9 +1,9 @@
-// app/layout.tsx
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google"; // renamed for clarity
 import { Cinzel_Decorative } from "next/font/google"; // ← ADD THIS
 import "./globals.css";
 import Provider from "./Provider";
+import { Toaster } from "@/components/ui/sonner";
 
 // Your existing fonts
 const geistSans = Geist({
@@ -59,6 +59,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${cinzelDecorative.variable} antialiased font-sans`}
       >
         <Provider>{children}</Provider>
+        <Toaster position="top-center" theme="dark" richColors />
       </body>
     </html>
   );

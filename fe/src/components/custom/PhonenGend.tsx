@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -12,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AlertCircle, Phone, User } from "lucide-react";
+import { Phone, User } from "lucide-react";
 
 export default function CompleteProfile() {
   const router = useRouter();
@@ -20,16 +21,21 @@ export default function CompleteProfile() {
   const [countryCode, setCountryCode] = useState("+91");
   const [gender, setGender] = useState("");
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ phone?: string; gender?: string }>({});
 
   const validateForm = () => {
-    const newErrors: { phone?: string; gender?: string } = {};
-    if (!phoneNumber) newErrors.phone = "Phone number is required";
-    else if (!/^[0-9]{10}$/.test(phoneNumber))
-      newErrors.phone = "Enter a valid 10-digit phone number";
-    if (!gender) newErrors.gender = "Please select your gender";
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    if (!phoneNumber) {
+      toast.error("Phone number is required");
+      return false;
+    }
+    if (!/^[0-9]{10}$/.test(phoneNumber)) {
+      toast.error("Enter a valid 10-digit phone number");
+      return false;
+    }
+    if (!gender) {
+      toast.error("Please select your gender");
+      return false;
+    }
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,12 +53,13 @@ export default function CompleteProfile() {
         }),
       });
       if (res.ok) {
+        toast.success("Profile updated successfully!");
         router.push("/dashboard");
       } else {
-        setErrors({ phone: "Failed to update profile. Please try again." });
+        toast.error("Failed to update profile. Please try again.");
       }
     } catch {
-      setErrors({ phone: "An error occurred. Please try again." });
+      toast.error("An error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -99,12 +106,6 @@ export default function CompleteProfile() {
                 className="flex-1 h-10 sm:h-11 bg-white/10 border-amber-500/30 text-amber-50 placeholder-amber-200/50 focus:border-amber-400 focus:ring-amber-400/20 rounded-lg"
               />
             </div>
-            {errors.phone && (
-              <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {errors.phone}
-              </p>
-            )}
           </div>
 
           <div>
@@ -125,12 +126,6 @@ export default function CompleteProfile() {
                 <SelectItem value="OTHER">Other</SelectItem>
               </SelectContent>
             </Select>
-            {errors.gender && (
-              <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {errors.gender}
-              </p>
-            )}
           </div>
 
           <Button

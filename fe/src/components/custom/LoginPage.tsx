@@ -3,19 +3,19 @@
 import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Alert } from "@/components/ui/alert";
-import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { Mail, Lock, Loader2, ArrowLeft, Globe, Sparkles } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     const updateTime = () => {
@@ -37,9 +37,21 @@ export default function LoginPage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Handle OAuth errors
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (error === "OAuthAccountNotLinked") {
+      toast.error(
+        "Account already exists with this email. Please sign in with your original method or use password reset.",
+        { duration: 6000 }
+      );
+    } else if (error) {
+      toast.error("Authentication error. Please try again.");
+    }
+  }, [searchParams]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setIsLoading(true);
 
     const result = await signIn("credentials", {
@@ -49,13 +61,12 @@ export default function LoginPage() {
     });
 
     if (result?.error) {
-      setError("Invalid email or password");
-      // toast.error("Invalid email or password");
+      toast.error("Invalid email or password");
+      setIsLoading(false);
     } else {
-      // toast.success("Welcome back!");
+      toast.success("Welcome back!");
       setTimeout(() => (window.location.href = "/dashboard"), 100);
     }
-    setIsLoading(false);
   };
 
   const handleProvider = (provider: "google" | "instagram") => {
@@ -120,12 +131,6 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {error && (
-          <Alert className="mb-6 bg-red-500/10 border-red-500/30 text-amber-100 text-sm">
-            {error}
-          </Alert>
-        )}
-
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="relative">
             <Mail className="absolute left-3 top-3.5 w-5 h-5 text-amber-400" />
@@ -158,7 +163,8 @@ export default function LoginPage() {
             {isLoading ? (
               <>
                 {" "}
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Signing In...{" "}
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Signing
+                In...{" "}
               </>
             ) : (
               "Sign In"
@@ -220,8 +226,6 @@ export default function LoginPage() {
           </Link>
         </p>
       </Card>
-
-      <Toaster position="top-center" theme="dark" />
     </div>
   );
 }

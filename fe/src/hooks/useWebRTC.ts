@@ -31,7 +31,10 @@ function buildIceServers(): RTCIceServer[] {
 }
 
 // CRITICAL: Mobile-safe video player
-function playVideoSafely(video: HTMLVideoElement, streamType: "local" | "remote") {
+function playVideoSafely(
+  video: HTMLVideoElement,
+  streamType: "local" | "remote"
+) {
   if (!video.srcObject) {
     console.warn(`[WebRTC] No srcObject for ${streamType} video`);
     return;
@@ -43,22 +46,30 @@ function playVideoSafely(video: HTMLVideoElement, streamType: "local" | "remote"
   video.load();
 
   const playPromise = video.play();
-  
+
   if (playPromise !== undefined) {
     playPromise
       .then(() => {
         console.log(`[WebRTC] ✅ ${streamType} video playing`);
       })
       .catch((error) => {
-        console.warn(`[WebRTC] ${streamType} video autoplay blocked:`, error.message);
-        
+        console.warn(
+          `[WebRTC] ${streamType} video autoplay blocked:`,
+          error.message
+        );
+
         // iOS/Safari fix: Wait for user interaction
         const playOnInteraction = () => {
-          console.log(`[WebRTC] Retrying ${streamType} video play on user interaction`);
+          console.log(
+            `[WebRTC] Retrying ${streamType} video play on user interaction`
+          );
           video.play().catch((retryError) => {
-            console.error(`[WebRTC] Retry failed for ${streamType}:`, retryError);
+            console.error(
+              `[WebRTC] Retry failed for ${streamType}:`,
+              retryError
+            );
           });
-          
+
           // Remove listeners after first attempt
           document.removeEventListener("touchstart", playOnInteraction);
           document.removeEventListener("touchend", playOnInteraction);
@@ -66,11 +77,19 @@ function playVideoSafely(video: HTMLVideoElement, streamType: "local" | "remote"
         };
 
         // Listen for ANY user interaction
-        document.addEventListener("touchstart", playOnInteraction, { once: true, passive: true });
-        document.addEventListener("touchend", playOnInteraction, { once: true, passive: true });
+        document.addEventListener("touchstart", playOnInteraction, {
+          once: true,
+          passive: true,
+        });
+        document.addEventListener("touchend", playOnInteraction, {
+          once: true,
+          passive: true,
+        });
         document.addEventListener("click", playOnInteraction, { once: true });
-        
-        console.log(`[WebRTC] 📱 Waiting for user tap to play ${streamType} video...`);
+
+        console.log(
+          `[WebRTC] 📱 Waiting for user tap to play ${streamType} video...`
+        );
       });
   }
 }
@@ -79,7 +98,7 @@ export function useWebRTC({
   socket,
   roomId,
   selfUserId,
-  localStreamRef
+  localStreamRef,
 }: UseWebRTCArgs): UseWebRTCResult {
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localElRef = useRef<HTMLVideoElement | null>(null);
@@ -109,7 +128,7 @@ export function useWebRTC({
       const st = pc.connectionState;
       console.log(`[WebRTC] Connection state: ${st}`);
       setConnected(st === "connected");
-      
+
       if (st === "failed") {
         console.warn("[WebRTC] Connection failed, attempting restart...");
         pc.restartIce?.();
@@ -130,7 +149,10 @@ export function useWebRTC({
         return;
       }
       console.log("[WebRTC] Sending ICE candidate");
-      socket.emit("rtc:candidate", { roomId, candidate: ev.candidate.toJSON() });
+      socket.emit("rtc:candidate", {
+        roomId,
+        candidate: ev.candidate.toJSON(),
+      });
     };
 
     // ✅ MOBILE FIX: Improved track handler with aggressive retries
@@ -140,7 +162,7 @@ export function useWebRTC({
         trackId: ev.track.id,
         streamsCount: ev.streams.length,
         trackReadyState: ev.track.readyState,
-        trackEnabled: ev.track.enabled
+        trackEnabled: ev.track.enabled,
       });
 
       const stream = ev.streams[0] || new MediaStream([ev.track]);
@@ -150,34 +172,37 @@ export function useWebRTC({
         id: stream.id,
         active: stream.active,
         videoTracks: stream.getVideoTracks().length,
-        audioTracks: stream.getAudioTracks().length
+        audioTracks: stream.getAudioTracks().length,
       });
 
       // ✅ CRITICAL: Attach stream immediately if element exists
       if (remoteElRef.current) {
         console.log("[WebRTC] Attaching remote stream to video element");
         remoteElRef.current.srcObject = stream;
-        
+
         // Force video element attributes (mobile needs these AFTER srcObject)
         remoteElRef.current.playsInline = true;
         remoteElRef.current.autoplay = true;
         remoteElRef.current.muted = false; // Remote should have audio
-        
+
         // Wait a tick for browser to process srcObject
         setTimeout(() => {
           if (remoteElRef.current) {
             playVideoSafely(remoteElRef.current, "remote");
           }
         }, 100);
-        
+
         // Mobile Safari fix: Retry on loadedmetadata
-        remoteElRef.current.addEventListener("loadedmetadata", () => {
-          console.log("[WebRTC] Remote video metadata loaded");
-          if (remoteElRef.current) {
-            playVideoSafely(remoteElRef.current, "remote");
-          }
-        }, { once: true });
-        
+        remoteElRef.current.addEventListener(
+          "loadedmetadata",
+          () => {
+            console.log("[WebRTC] Remote video metadata loaded");
+            if (remoteElRef.current) {
+              playVideoSafely(remoteElRef.current, "remote");
+            }
+          },
+          { once: true }
+        );
       } else {
         console.warn("[WebRTC] ⚠️ Remote video element not mounted yet!");
       }
@@ -185,48 +210,47 @@ export function useWebRTC({
 
     // Check for existing local stream
     let mediaReady = !!localStreamRef.current;
-    
+
     if (mediaReady) {
       console.log("[WebRTC] ✅ Reusing existing local stream");
-      
+
       localStreamRef.current!.getTracks().forEach((track) => {
         console.log(`[WebRTC] Adding ${track.kind} track to peer connection`);
         pc.addTrack(track, localStreamRef.current!);
       });
-      
+
       socket.emit("room:join", { roomId });
-      
     } else {
       console.log("[WebRTC] Requesting user media...");
-      
+
       (async () => {
         try {
           // ✅ MOBILE-OPTIMIZED CONSTRAINTS
           const stream = await navigator.mediaDevices.getUserMedia({
-            video: { 
-              width: { ideal: 1280, max: 1920 }, 
+            video: {
+              width: { ideal: 1280, max: 1920 },
               height: { ideal: 720, max: 1080 },
               facingMode: "user",
-              frameRate: { ideal: 30, max: 30 } // Limit frame rate for mobile
+              frameRate: { ideal: 30, max: 30 }, // Limit frame rate for mobile
             },
-            audio: { 
-              echoCancellation: true, 
-              noiseSuppression: true, 
-              autoGainControl: true 
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
             },
           });
-          
+
           if (closed) {
             stream.getTracks().forEach((t) => t.stop());
             return;
           }
-          
+
           console.log("[WebRTC] ✅ Got local stream", {
             videoTracks: stream.getVideoTracks().length,
             audioTracks: stream.getAudioTracks().length,
-            videoSettings: stream.getVideoTracks()[0]?.getSettings()
+            videoSettings: stream.getVideoTracks()[0]?.getSettings(),
           });
-          
+
           localStreamRef.current = stream;
 
           // Attach to video element if it exists
@@ -235,7 +259,7 @@ export function useWebRTC({
             localElRef.current.muted = true; // MUST be muted for autoplay
             localElRef.current.playsInline = true;
             localElRef.current.autoplay = true;
-            
+
             setTimeout(() => {
               if (localElRef.current) {
                 playVideoSafely(localElRef.current, "local");
@@ -244,13 +268,14 @@ export function useWebRTC({
           }
 
           stream.getTracks().forEach((track) => {
-            console.log(`[WebRTC] Adding ${track.kind} track to peer connection`);
+            console.log(
+              `[WebRTC] Adding ${track.kind} track to peer connection`
+            );
             pc.addTrack(track, stream);
           });
-          
+
           mediaReady = true;
           socket.emit("room:join", { roomId });
-          
         } catch (e) {
           console.error("[WebRTC] getUserMedia failed:", e);
           socket.emit("room:join", { roomId });
@@ -267,13 +292,13 @@ export function useWebRTC({
       if (payload.offerer === selfUserId) {
         (async () => {
           if (!pcRef.current) return;
-          
+
           let attempts = 0;
           while (!mediaReady && attempts < 50) {
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise((resolve) => setTimeout(resolve, 100));
             attempts++;
           }
-          
+
           try {
             makingOfferRef.current = true;
             const offer = await pc.createOffer();
@@ -288,27 +313,33 @@ export function useWebRTC({
       }
     };
 
-    const onOffer = async (payload: { roomId: string; sdp: RTCSessionDescriptionInit }) => {
+    const onOffer = async (payload: {
+      roomId: string;
+      sdp: RTCSessionDescriptionInit;
+    }) => {
       if (payload.roomId !== roomId || !pcRef.current) return;
-      
+
       let attempts = 0;
       while (!mediaReady && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
         attempts++;
       }
-      
+
       const pcNow = pcRef.current;
-      const offerCollision = makingOfferRef.current || pcNow.signalingState !== "stable";
+      const offerCollision =
+        makingOfferRef.current || pcNow.signalingState !== "stable";
       ignoreOfferRef.current = !politeRef.current && offerCollision;
-      
+
       if (ignoreOfferRef.current) return;
 
       try {
         if (offerCollision && politeRef.current) {
           await pcNow.setLocalDescription({ type: "rollback" });
         }
-        
-        await pcNow.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+
+        await pcNow.setRemoteDescription(
+          new RTCSessionDescription(payload.sdp)
+        );
         const answer = await pcNow.createAnswer();
         await pcNow.setLocalDescription(answer);
         socket.emit("rtc:answer", { roomId, sdp: pcNow.localDescription });
@@ -317,19 +348,29 @@ export function useWebRTC({
       }
     };
 
-    const onAnswer = async (payload: { roomId: string; sdp: RTCSessionDescriptionInit }) => {
+    const onAnswer = async (payload: {
+      roomId: string;
+      sdp: RTCSessionDescriptionInit;
+    }) => {
       if (payload.roomId !== roomId || !pcRef.current) return;
       try {
-        await pcRef.current.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+        await pcRef.current.setRemoteDescription(
+          new RTCSessionDescription(payload.sdp)
+        );
       } catch (err) {
         console.error("[WebRTC] onAnswer failed:", err);
       }
     };
 
-    const onCandidate = async (payload: { roomId: string; candidate: RTCIceCandidateInit }) => {
+    const onCandidate = async (payload: {
+      roomId: string;
+      candidate: RTCIceCandidateInit;
+    }) => {
       if (payload.roomId !== roomId || !pcRef.current) return;
       try {
-        await pcRef.current.addIceCandidate(new RTCIceCandidate(payload.candidate));
+        await pcRef.current.addIceCandidate(
+          new RTCIceCandidate(payload.candidate)
+        );
       } catch (err) {
         if (!ignoreOfferRef.current) {
           console.warn("[WebRTC] addIceCandidate failed:", err);
@@ -340,12 +381,12 @@ export function useWebRTC({
     const onPeerLeft = () => {
       console.log("[WebRTC] Peer left");
       setConnected(false);
-      
+
       if (remoteStreamRef.current) {
-        remoteStreamRef.current.getTracks().forEach(track => track.stop());
+        remoteStreamRef.current.getTracks().forEach((track) => track.stop());
         remoteStreamRef.current = null;
       }
-      
+
       if (remoteElRef.current) {
         remoteElRef.current.srcObject = null;
       }
@@ -365,14 +406,16 @@ export function useWebRTC({
       socket.off("rtc:candidate", onCandidate);
       socket.off("rtc:peer-left", onPeerLeft);
 
-      try { pc.close(); } catch {}
+      try {
+        pc.close();
+      } catch {}
       pcRef.current = null;
 
       if (remoteStreamRef.current) {
-        remoteStreamRef.current.getTracks().forEach(track => track.stop());
+        remoteStreamRef.current.getTracks().forEach((track) => track.stop());
         remoteStreamRef.current = null;
       }
-      
+
       if (remoteElRef.current) remoteElRef.current.srcObject = null;
 
       makingOfferRef.current = false;
@@ -383,42 +426,51 @@ export function useWebRTC({
   }, [socket, roomId, selfUserId, localStreamRef]);
 
   // ✅ MOBILE FIX: Aggressive attachment with retries
-  const attachLocal = useCallback((el: HTMLVideoElement | null) => {
-    console.log("[WebRTC] attachLocal called", { hasElement: !!el, hasStream: !!localStreamRef.current });
-    localElRef.current = el;
-    
-    if (el && localStreamRef.current) {
-      el.srcObject = localStreamRef.current;
-      el.muted = true;
-      el.playsInline = true;
-      el.autoplay = true;
-      
-      // Force explicit size
-      el.style.width = "100%";
-      el.style.height = "100%";
-      el.style.objectFit = "cover";
-      
-      setTimeout(() => {
-        if (el) playVideoSafely(el, "local");
-      }, 100);
-    }
-  }, [localStreamRef]);
+  const attachLocal = useCallback(
+    (el: HTMLVideoElement | null) => {
+      console.log("[WebRTC] attachLocal called", {
+        hasElement: !!el,
+        hasStream: !!localStreamRef.current,
+      });
+      localElRef.current = el;
+
+      if (el && localStreamRef.current) {
+        el.srcObject = localStreamRef.current;
+        el.muted = true;
+        el.playsInline = true;
+        el.autoplay = true;
+
+        // Force explicit size
+        el.style.width = "100%";
+        el.style.height = "100%";
+        el.style.objectFit = "cover";
+
+        setTimeout(() => {
+          if (el) playVideoSafely(el, "local");
+        }, 100);
+      }
+    },
+    [localStreamRef]
+  );
 
   const attachRemote = useCallback((el: HTMLVideoElement | null) => {
-    console.log("[WebRTC] attachRemote called", { hasElement: !!el, hasStream: !!remoteStreamRef.current });
+    console.log("[WebRTC] attachRemote called", {
+      hasElement: !!el,
+      hasStream: !!remoteStreamRef.current,
+    });
     remoteElRef.current = el;
-    
+
     if (el) {
       // Set attributes BEFORE checking stream
       el.playsInline = true;
       el.autoplay = true;
       el.muted = false;
-      
+
       // Force explicit size
       el.style.width = "100%";
       el.style.height = "100%";
       el.style.objectFit = "cover";
-      
+
       if (remoteStreamRef.current) {
         console.log("[WebRTC] Attaching existing remote stream");
         el.srcObject = remoteStreamRef.current;
@@ -427,12 +479,12 @@ export function useWebRTC({
         }, 100);
         return;
       }
-      
+
       // Check for tracks in peer connection
       if (pcRef.current) {
         const receivers = pcRef.current.getReceivers();
-        const tracks = receivers.map(r => r.track).filter(Boolean);
-        
+        const tracks = receivers.map((r) => r.track).filter(Boolean);
+
         if (tracks.length > 0) {
           console.log("[WebRTC] Creating stream from existing tracks");
           const stream = new MediaStream(tracks);
@@ -450,7 +502,7 @@ export function useWebRTC({
     console.log("[WebRTC] 🧹 Cleaning up REMOTE only");
 
     if (remoteStreamRef.current) {
-      remoteStreamRef.current.getTracks().forEach(track => {
+      remoteStreamRef.current.getTracks().forEach((track) => {
         track.stop();
       });
       remoteStreamRef.current = null;
@@ -468,11 +520,13 @@ export function useWebRTC({
     }
 
     setConnected(false);
-    console.log("[WebRTC] ✅ Local stream preserved:", !!localStreamRef.current);
+    console.log(
+      "[WebRTC] ✅ Local stream preserved:",
+      !!localStreamRef.current
+    );
   }, [localStreamRef]);
 
-  const replaceVideoTrack = useCallback(
-  async (newTrack: MediaStreamTrack) => {
+  const replaceVideoTrack = useCallback(async (newTrack: MediaStreamTrack) => {
     const pc = pcRef.current;
     if (!pc) {
       console.warn("[WebRTC] replaceVideoTrack: no PeerConnection");
@@ -494,61 +548,66 @@ export function useWebRTC({
     } catch (err) {
       console.error("[WebRTC] replaceTrack failed:", err);
     }
-  },
-  []
-);
+  }, []);
 
+  const toggleAudio = useCallback(
+    (on?: boolean) => {
+      const s = localStreamRef.current;
+      if (!s) return;
+      s.getAudioTracks().forEach((t) => {
+        t.enabled = on ?? !t.enabled;
+      });
+    },
+    [localStreamRef]
+  );
 
-  const toggleAudio = useCallback((on?: boolean) => {
-    const s = localStreamRef.current;
-    if (!s) return;
-    s.getAudioTracks().forEach((t) => {
-      t.enabled = on ?? !t.enabled;
-    });
-  }, [localStreamRef]);
-
-  const toggleVideo = useCallback((on?: boolean) => {
-    const s = localStreamRef.current;
-    if (!s) return;
-    s.getVideoTracks().forEach((t) => {
-      t.enabled = on ?? !t.enabled;
-    });
-  }, [localStreamRef]);
+  const toggleVideo = useCallback(
+    (on?: boolean) => {
+      const s = localStreamRef.current;
+      if (!s) return;
+      s.getVideoTracks().forEach((t) => {
+        t.enabled = on ?? !t.enabled;
+      });
+    },
+    [localStreamRef]
+  );
 
   const endCall = useCallback(() => {
     console.log("[WebRTC] ⚠️ Full teardown");
-    
+
     if (socket && roomId) socket.emit("rtc:leave", { roomId });
-    
+
     if (pcRef.current) {
-      try { pcRef.current.close(); } catch {}
+      try {
+        pcRef.current.close();
+      } catch {}
       pcRef.current = null;
     }
-    
+
     if (remoteStreamRef.current) {
-      remoteStreamRef.current.getTracks().forEach(t => t.stop());
+      remoteStreamRef.current.getTracks().forEach((t) => t.stop());
       remoteStreamRef.current = null;
     }
-    
+
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((t) => t.stop());
       localStreamRef.current = null;
     }
-    
+
     if (remoteElRef.current) remoteElRef.current.srcObject = null;
     if (localElRef.current) localElRef.current.srcObject = null;
-    
+
     setConnected(false);
   }, [roomId, socket, localStreamRef]);
 
-  return { 
-    attachLocal, 
-    attachRemote, 
-    toggleAudio, 
-    toggleVideo, 
+  return {
+    attachLocal,
+    attachRemote,
+    toggleAudio,
+    toggleVideo,
     cleanupRemote,
     replaceVideoTrack,
     endCall,
-    connected 
+    connected,
   };
 }
